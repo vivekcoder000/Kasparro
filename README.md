@@ -8,7 +8,7 @@ This system ingests cryptocurrency data, cleans and normalizes it, stores it in 
 ## 🌍 Live Deployment
 
 API Base URL:
-https://YOUR-RAILWAY-URL.up.railway.app
+https://kasparro-backend-naveen-kumar-production.up.railway.app/
 
 Useful Endpoints:
 - `/` → Welcome
@@ -56,3 +56,67 @@ Supports:
 ---
 
 ## 🐳 Docker Support
+
+docker-compose up --build
+
+Services:
+- FastAPI backend
+- PostgreSQL DB
+- Automatic ETL on startup
+
+---
+
+## ⏰ Scheduling
+Cloud scheduler automatically runs ETL every **1 hour** using APScheduler.
+
+Fully automated.
+No manual trigger required.
+Logs available in Railway dashboard.
+
+---
+
+## 🧪 Automated Tests
+
+pytest -v
+
+Covers:
+✔ `/health` endpoint  
+✔ `/data` endpoint  
+✔ ETL functionality  
+✔ Failure simulation (database break test)
+
+Ensures production reliability and developer confidence.
+
+---
+
+## 🚀 Deployment
+Deployed on Railway:
+- Backend Service
+- PostgreSQL DB
+- Docker
+- Environment Variables configured
+- Auto redeploy from GitHub
+- Persistent logs
+
+---
+
+## 🏁 Features Completed for Assignment
+
+✔ Dockerized Backend  
+✔ Clean Architecture  
+✔ PostgreSQL Integration  
+✔ Cloud Deployment  
+✔ ETL Pipelines  
+✔ Incremental Processing  
+✔ Recovery Logic  
+✔ Public APIs  
+✔ Scheduling  
+✔ Automated Testing  
+✔ Monitoring & Logs  
+✔ Professional Documentation  
+
+---
+
+## 👨‍💻 Developer
+Name: Naveen Kumar  
+Email: naveeengulgi2003@gmail.com
