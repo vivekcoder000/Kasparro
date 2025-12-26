@@ -15,6 +15,7 @@ from ingestion.api_coingecko import fetch_coingecko
 from ingestion.csv_loader import load_csv_data
 from services.etl_runner import normalize_data
 from schemas.data_response import DataResponse
+from api.stats import router as stats_router
 def run_scheduled_etl():
     print("🔥 Scheduled ETL Started")
 
@@ -30,6 +31,7 @@ def run_scheduled_etl():
 
 
 app = FastAPI()
+app.include_router(stats_router)
 scheduler = BackgroundScheduler()
 scheduler.add_job(run_scheduled_etl, "interval", hours=1)  # change to minutes=1 for testing
 scheduler.start()
@@ -69,7 +71,6 @@ def root():
         }
     }
 
-@app.get("/health")
 @app.get("/health")
 def health(db: Session = Depends(get_db)):
     db_status = "down"
@@ -145,27 +146,7 @@ def get_data(
     }
 
 
-@app.get("/stats")
-def get_stats(db: Session = Depends(get_db)):
-    runs = db.query(ETLRun).order_by(desc(ETLRun.id)).all()
 
-    total_runs = len(runs)
-    total_processed = sum(r.records_processed for r in runs)
-
-    last_success = next((r for r in runs if r.status == "success"), None)
-    last_failure = next((r for r in runs if r.status == "failed"), None)
-
-    return {
-        "total_runs": total_runs,
-        "total_records_processed": total_processed,
-        "last_success": {
-            "at": last_success.finished_at if last_success else None,
-            "records": last_success.records_processed if last_success else None
-        },
-        "last_failure": {
-            "at": last_failure.finished_at if last_failure else None
-        }
-    }
 @app.on_event("shutdown")
 def shutdown_event():
     scheduler.shutdown()
