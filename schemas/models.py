@@ -50,13 +50,11 @@ class ETLRun(Base):
     records_processed = Column(Integer)
 
 class ETLCheckpoint(Base):
-    __tablename__ = "etl_checkpoint"
+    __tablename__ = "etl_checkpoints"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    source = Column(String)
-    last_run_time = Column(DateTime)
-    last_success_time = Column(DateTime)
-    status = Column(String)  # success or failed or running
+    source = Column(String, primary_key=True)
+    last_value = Column(String)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
 

@@ -2,21 +2,40 @@ import csv
 from core.db import SessionLocal
 from schemas.models import RawCSV
 
-def load_csv_data():
-    print("Reading CSV...")
+from services.checkpoint_service import get_checkpoint, update_checkpoint
 
-    db = SessionLocal()
+def load_csv_data(db=None):
+    print("Reading CSV...")
+    should_close_db = False
+    if db is None:
+        db = SessionLocal()
+        should_close_db = True
 
     try:
         with open("data/crypto_sample.csv", mode="r") as file:
             reader = csv.DictReader(file)
             rows = list(reader)
 
-            record = RawCSV(data=rows)
-            db.add(record)
-            db.commit()
+            last_val = get_checkpoint(db, "csv")
+            last_idx = int(last_val) if last_val else -1
 
-        print("CSV data stored successfully")
+            new_rows = []
+            max_idx = last_idx
+
+            for i, row in enumerate(rows):
+                if i <= last_idx:
+                    continue
+                new_rows.append(row)
+                max_idx = i
+
+            if new_rows:
+                record = RawCSV(data=new_rows)
+                db.add(record)
+                update_checkpoint(db, "csv", str(max_idx))
+                db.commit()
+                print(f"CSV: Stored {len(new_rows)} new rows.")
+            else:
+                print("CSV: No new rows found.")
 
     except Exception as e:
         db.rollback()
@@ -24,4 +43,5 @@ def load_csv_data():
         print(e)
 
     finally:
-        db.close()
+        if should_close_db:
+            db.close()
