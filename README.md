@@ -1,122 +1,65 @@
-# Kasparro Backend & ETL System 🚀
+# Kasparro Backend ETL
 
-A production-grade backend system built as part of Kasparro assignment.  
-This system ingests cryptocurrency data, cleans and normalizes it, stores it in PostgreSQL, exposes APIs, and runs scheduled ETL — all deployed in the cloud.
+## Overview
+A robust, restart-safe ETL backend for crypto data. It ingests data from multiple sources (simulated APIs, CSVs), normalizes it into a unified schema, and exposes it via a fast REST API.
 
----
+## Features
+- **Incremental ETL**: Uses checkpoints to avoid re-processing old data.
+- **Restart Safety**: Tracks run status (`running`/`success`/`failed`) to handle crashes gracefully.
+- **Hybrid Architecture**: Designed to run the FastAPI app natively on Windows while keeping the Database in Docker for stability.
+- **Observability**: Dedicated `/health` and `/stats` endpoints.
 
-## 🌍 Live Deployment
+## Quick Start
 
-API Base URL:
-https://kasparro-backend-naveen-kumar-production.up.railway.app/
+### Prerequisites
+- Docker Desktop
+- Python 3.11+
+- Git Bash or PowerShell
 
-Useful Endpoints:
-- `/` → Welcome
-- `/health` → System + DB health
-- `/data` → Paginated normalized crypto data
-- `/stats` → ETL run analytics
-- `/docs` → Swagger UI
+### Running the System
+1. **Start Database**:
+   ```bash
+   docker-compose up -d db
+   ```
+2. **Install Dependencies**:
+   ```bash
+   .\venv\Scripts\pip install -r requirements.txt
+   ```
+3. **Initialize Database**:
+   ```bash
+   .\venv\Scripts\python create_tables.py
+   ```
+4. **Run Server**:
+   ```bash
+   .\venv\Scripts\python -m uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+   ```
+   *Access API docs at [http://localhost:8000/docs](http://localhost:8000/docs)*
 
----
+5. **Run ETL Manually**:
+   ```bash
+   .\venv\Scripts\python run_etl.py
+   ```
 
-## 🧠 System Architecture
-**Built with**
-- FastAPI
-- PostgreSQL
-- SQLAlchemy ORM
-- Docker
-- Railway Cloud
-- APScheduler (cloud scheduling)
-- PyTest (automated tests)
+### Testing
+Run the full test suite (requires DB to be running):
+```bash
+.\venv\Scripts\python -m pytest
+```
 
-**Flow**
-1️⃣ Fetch from CoinPaprika  
-2️⃣ Fetch from CoinGecko  
-3️⃣ Load CSV  
-4️⃣ Store Raw  
-5️⃣ Normalize  
-6️⃣ Store final structured dataset  
-7️⃣ Serve via API  
-8️⃣ Repeat automatically on schedule
+## Architecture
 
----
+### Data Flow
+1. **Ingestion**: `ingestion/` scripts fetch data from CoinPaprika, CoinGecko, and CSVs.
+2. **Filtering**: Checkpoints (`etl_checkpoints` table) are queried to skip already processed records (Idempotency).
+3. **Normalization**: Raw data is transformed and strictly typed before insertion into `normalized_coins`.
+4. **Serving**: FastAPI serves data via `/data` with pagination and filtering.
 
-## 🗄️ Database Design
-Tables:
-- `RawCoinPaprika`
-- `RawCSV`
-- `NormalizedCoin`
-- `ETLRun / ETLCheckpoint`
+### Key Components
+- **`services/checkpoint_service.py`**: Manages granular extraction cursors.
+- **`services/etl_runner.py`**: Orchestrates the normalization process.
+- **`api/stats.py`**: Provides pipeline metrics (`last_success`, `total_runs`).
 
-Supports:
-- Incremental ETL
-- Resume safe behavior
-- Monitoring
-
----
-
-## 🐳 Docker Support
-
-docker-compose up --build
-
-Services:
-- FastAPI backend
-- PostgreSQL DB
-- Automatic ETL on startup
-
----
-
-## ⏰ Scheduling
-Cloud scheduler automatically runs ETL every **1 hour** using APScheduler.
-
-Fully automated.
-No manual trigger required.
-Logs available in Railway dashboard.
-
----
-
-## 🧪 Automated Tests
-
-pytest -v
-
-Covers:
-✔ `/health` endpoint  
-✔ `/data` endpoint  
-✔ ETL functionality  
-✔ Failure simulation (database break test)
-
-Ensures production reliability and developer confidence.
-
----
-
-## 🚀 Deployment
-Deployed on Railway:
-- Backend Service
-- PostgreSQL DB
-- Docker
-- Environment Variables configured
-- Auto redeploy from GitHub
-- Persistent logs
-
----
-
-## 🏁 Features Completed for Assignment
-
-✔ Dockerized Backend  
-✔ Clean Architecture  
-✔ PostgreSQL Integration  
-✔ Cloud Deployment  
-✔ ETL Pipelines  
-✔ Incremental Processing  
-✔ Recovery Logic  
-✔ Public APIs  
-✔ Scheduling  
-✔ Automated Testing  
-✔ Monitoring & Logs  
-✔ Professional Documentation  
-
----
-
-## 👨‍💻 Developer
-Name: Naveen Kumar  
-Email: naveeengulgi2003@gmail.com
+## Design Decisions
+- **Raw Tables**: We store raw JSON first (`raw_coinpaprika`, etc.) to allow re-processing if business logic changes.
+- **Checkpoints**: Essential for performance; prevents ingesting millions of duplicate rows on restart.
+- **Hybrid Mode**: Solves Windows/Docker networking issues by keeping the API on the host network.

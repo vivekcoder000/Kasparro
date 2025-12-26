@@ -1,5 +1,7 @@
 from sqlalchemy import text
 
+# Checkpoints track last successfully processed record/index
+# to guarantee idempotent ETL runs and avoid re-processing data.
 def get_checkpoint(db, source: str):
     result = db.execute(
         text("""
