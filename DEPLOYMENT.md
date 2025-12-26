@@ -16,14 +16,18 @@ This will:
 2.  Build your docker image.
 3.  Push it to AWS.
 
-## 3. Launch EC2
-1.  Go to AWS Console > EC2 > Launch Instance.
-2.  **OS**: Amazon Linux 2.
-3.  **Type**: t2.micro.
-4.  **Security Group**: Allow TCP port `8000` (Custom TCP) and `22` (SSH).
-5.  **IAM Role**: Create/Attach a role with `AmazonEC2ContainerRegistryReadOnly` policy (so it can pull the image).
+## 3. Launch EC2 (Automated)
+Run the automated launch script:
+```powershell
+.\deployment\launch_ec2.ps1
+```
+This script will:
+1.  Create a Key Pair (`kasparro-key.pem`) -> **SAVE THIS FILE**.
+2.  Create a Security Group (`kasparro-sg`) allowing ports 22 & 8000.
+3.  Launch a t2.micro instance.
+4.  Auto-install Docker and start your app.
 
-## 4. Run on EC2
+## 4. Manual Launch (Alternative)
 SSH into your instance:
 ```bash
 ssh -i key.pem ec2-user@<PUBLIC_IP>

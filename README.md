@@ -66,3 +66,15 @@ Run the full test suite (requires DB to be running):
 
 ## Deployment
 For AWS deployment instructions (ECR/EC2), please refer to [DEPLOYMENT.md](DEPLOYMENT.md).
+
+### Cloud Verification
+Once deployed via `deployment/launch_ec2.ps1`, your API will be available at:
+- `http://<EC2_PUBLIC_IP>:8000/health`
+- `http://<EC2_PUBLIC_IP>:8000/data`
+
+Logs can be viewed on the EC2 instance:
+```bash
+# SSH in first
+docker logs $(docker ps -q)
+```
+
