@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.env
+
+# AWS
+*.pem
+trust_policy.json
+user_data.sh
+
+# IDE
+.vscode/
+.idea/

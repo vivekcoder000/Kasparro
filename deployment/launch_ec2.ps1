@@ -4,7 +4,7 @@
 $ErrorActionPreference = "Stop"
 $AWS_CMD = "C:\Program Files\Amazon\AWSCLIV2\aws.exe"
 $REGION = "ap-south-1"
-$AMI_ID = "ami-0522ab6e1ddcc7055" # Amazon Linux 2 (ap-south-1) - Verify if changed, but usually stable or use ssm to fetch
+$AMI_ID = "ami-0f5ee92e2d63afc18" # Ubuntu 22.04 LTS (ap-south-1)
 $INSTANCE_TYPE = "t2.micro"
 $KEY_NAME = "kasparro-key"
 $SG_NAME = "kasparro-sg"
@@ -43,38 +43,40 @@ try {
 # 3. Create IAM Role (for ECR Pull)
 $ROLE_NAME = "KasparroECRRole"
 $PROFILE_NAME = "KasparroECRProfile"
-Write-Host "Checking IAM Role '$ROLE_NAME'..."
-try {
-    & $AWS_CMD iam get-role --role-name $ROLE_NAME --no-cli-pager | Out-Null
-    Write-Host "✅ IAM Role exists."
-} catch {
+
+Write-Host "Configuring IAM Role '$ROLE_NAME'..."
+& $AWS_CMD iam get-role --role-name $ROLE_NAME --no-cli-pager
+if ($LASTEXITCODE -ne 0) {
     Write-Host "Creating IAM Role..."
     $TrustPolicy = '{"Version": "2012-10-17","Statement": [{"Effect": "Allow","Principal": {"Service": "ec2.amazonaws.com"},"Action": "sts:AssumeRole"}]}' | Out-File -Encoding ascii -FilePath "trust_policy.json"
     & $AWS_CMD iam create-role --role-name $ROLE_NAME --assume-role-policy-document file://trust_policy.json --no-cli-pager | Out-Null
     & $AWS_CMD iam attach-role-policy --role-name $ROLE_NAME --policy-arn "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly" --no-cli-pager
     Remove-Item "trust_policy.json"
     Write-Host "✅ Created IAM Role."
+} else {
+    Write-Host "✅ IAM Role exists."
 }
 
-Write-Host "Checking Instance Profile '$PROFILE_NAME'..."
-try {
-    & $AWS_CMD iam get-instance-profile --instance-profile-name $PROFILE_NAME --no-cli-pager | Out-Null
-    Write-Host "✅ Instance Profile exists."
-} catch {
+Write-Host "Configuring Instance Profile '$PROFILE_NAME'..."
+& $AWS_CMD iam get-instance-profile --instance-profile-name $PROFILE_NAME --no-cli-pager
+if ($LASTEXITCODE -ne 0) {
     Write-Host "Creating Instance Profile..."
     & $AWS_CMD iam create-instance-profile --instance-profile-name $PROFILE_NAME --no-cli-pager | Out-Null
     & $AWS_CMD iam add-role-to-instance-profile --instance-profile-name $PROFILE_NAME --role-name $ROLE_NAME --no-cli-pager
     Write-Host "✅ Created Instance Profile. Waiting for propagation..."
     Start-Sleep -Seconds 10
+} else {
+    Write-Host "✅ Instance Profile exists."
 }
 
 # 4. User Data Script (Auto-install & Run)
 $UserData = @"
 #!/bin/bash
-yum update -y
-amazon-linux-extras install docker -y
-service docker start
-usermod -a -G docker ec2-user
+apt-get update -y
+apt-get install -y docker.io awscli
+systemctl start docker
+systemctl enable docker
+usermod -aG docker ubuntu
 
 # Login to ECR (Using Instance Profile)
 aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin 337964479379.dkr.ecr.ap-south-1.amazonaws.com
